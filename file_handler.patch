@@ -1,0 +1,82 @@
+diff --git a/CRM/Core/BAO/File.php b/CRM/Core/BAO/File.php
+index 5f1bca7f7c..26a4a33a9b 100644
+--- a/CRM/Core/BAO/File.php
++++ b/CRM/Core/BAO/File.php
+@@ -326,8 +326,12 @@ class CRM_Core_BAO_File extends CRM_Core_DAO_File {
+     [$sql, $params] = self::sql($entityTable, $entityID, NULL);
+     $dao = CRM_Core_DAO::executeQuery($sql, $params);
+     $results = [];
++    $domainID = CRM_Core_Config::domainID();
++    $settings = Civi::settings($domainID);
++    $fileHandlerEnable = $settings->get('filehandler_enable');
+     while ($dao->fetch()) {
+       $fileHash = self::generateFileHash($dao->entity_id, $dao->cfID);
++      $result = [];
+       $result['fileID'] = $dao->cfID;
+       $result['entityID'] = $dao->cefID;
+       $result['mime_type'] = $dao->mime_type;
+@@ -336,7 +340,15 @@ class CRM_Core_BAO_File extends CRM_Core_DAO_File {
+       $result['cleanName'] = CRM_Utils_File::cleanFileName($dao->uri);
+       $result['fullPath'] = $config->customFileUploadDir . DIRECTORY_SEPARATOR . $dao->uri;
+       $result['url'] = CRM_Utils_System::url('civicrm/file', "reset=1&id={$dao->cfID}&eid={$dao->entity_id}&fcs={$fileHash}");
+-      $result['href'] = "<a href=\"{$result['url']}\">{$result['cleanName']}</a>";
++      $target = '';
++      $result['target'] = '';
++      if ($fileHandlerEnable) {
++        if (in_array($dao->mime_type, ['application/pdf', 'image/jpeg', 'image/pjpeg', 'image/gif', 'image/x-png', 'image/png'])) {
++          $result['url'] .= '&download=0';
++          $result['target'] = $target = ' target="_blank" ';
++        }
++      }
++      $result['href'] = "<a href=\"{$result['url']}\" {$target}>{$result['cleanName']}</a>";
+       $result['tag'] = CRM_Core_BAO_EntityTag::getTag($dao->cfID, 'civicrm_file');
+       $result['icon'] = CRM_Utils_File::getIconFromMimeType($dao->mime_type ?? '');
+       if ($addDeleteArgs) {
+@@ -726,6 +738,7 @@ AND       CEF.entity_id    = %2";
+     foreach ($currentAttachmentInfo as $fileKey => $fileValue) {
+       $fileID = $fileValue['fileID'];
+       if ($fileID) {
++        $target = $fileValue['target'];
+         $fileType = $fileValue['mime_type'];
+         $url = $fileValue['url'];
+         $title = $fileValue['cleanName'];
+@@ -736,7 +749,7 @@ AND       CEF.entity_id    = %2";
+           $fileType == 'image/png'
+         ) {
+           $file_url[$fileID] = <<<HEREDOC
+-              <a href="$url" class="crm-image-popup" title="$title">
++              <a href="$url" class="crm-image-popup" title="$title" $target>
+                 <i class="crm-i fa-file-image-o" aria-hidden="true"></i>
+               </a>
+ HEREDOC;
+@@ -744,7 +757,7 @@ HEREDOC;
+         // for non image files
+         else {
+           $file_url[$fileID] = <<<HEREDOC
+-              <a href="$url" title="$title">
++              <a href="$url" title="$title" $target>
+                 <i class="crm-i fa-paperclip" aria-hidden="true"></i>
+               </a>
+ HEREDOC;
+diff --git a/templates/CRM/Form/attachment.tpl b/templates/CRM/Form/attachment.tpl
+index 152ea3fcfb..1cdff0b816 100644
+--- a/templates/CRM/Form/attachment.tpl
++++ b/templates/CRM/Form/attachment.tpl
+@@ -15,7 +15,7 @@
+           {foreach from=$currentAttachmentInfo key=attKey item=attVal}
+                 <div id="attachStatusMesg" class="status hiddenElement"></div>
+                 <div id="attachFileRecord_{$attVal.fileID}">
+-                  <strong><a href="{$attVal.url}"><i class="crm-i {$attVal.icon}" aria-hidden="true"></i> {$attVal.cleanName}</a></strong>
++                  <strong><a href="{$attVal.url}" {$attVal.target}><i class="crm-i{$attVal.icon}" aria-hidden="true"></i> {$attVal.cleanName}</a></strong>
+                   {if $attVal.description}&nbsp;-&nbsp;{$attVal.description}{/if}
+                   {if $attVal.tag}
+                     <br />
+@@ -87,7 +87,7 @@
+             <td class="view-value">
+           {foreach from=$currentAttachmentInfo key=attKey item=attVal}
+                 <div class="crm-attachment-wrapper crm-entity" id="file_{$attVal.fileID}">
+-                  <strong><a class="crm-attachment" href="{$attVal.url}">{$attVal.cleanName}</a></strong>
++                  <strong><a class="crm-attachment" href="{$attVal.url}" {$attVal.target}>{$attVal.cleanName}</a></strong>
+                   {if $attVal.description}&nbsp;-&nbsp;{$attVal.description}{/if}
+                   {if $attVal.deleteURLArgs}
+                    <a href="#" class="crm-hover-button delete-attachment" data-filename="{$attVal.cleanName}" data-args="{$attVal.deleteURLArgs}" title="{ts}Delete File{/ts}"><span class="icon delete-icon"></span></a>
