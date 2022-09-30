@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/admin/filehandler</path>
+    <page_callback>CRM_Filehandler_Form_Setting</page_callback>
+    <title>File Handler Setting</title>
+    <access_arguments>administer CiviCRM</access_arguments>
+  </item>
+</menu>
