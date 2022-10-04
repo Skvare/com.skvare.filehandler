@@ -155,14 +155,14 @@ function filehandler_civicrm_themes(&$themes) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_navigationMenu
  */
-//function filehandler_civicrm_navigationMenu(&$menu) {
-//  _filehandler_civix_insert_navigation_menu($menu, 'Mailings', [
-//    'label' => E::ts('New subliminal message'),
-//    'name' => 'mailing_subliminal_message',
-//    'url' => 'civicrm/mailing/subliminal',
-//    'permission' => 'access CiviMail',
-//    'operator' => 'OR',
-//    'separator' => 0,
-//  ]);
-//  _filehandler_civix_navigationMenu($menu);
-//}
+function filehandler_civicrm_navigationMenu(&$menu) {
+  _filehandler_civix_insert_navigation_menu($menu, 'Administer/System Settings', [
+    'label' => E::ts('File Handler Setting'),
+    'name' => 'filehandler_setting',
+    'url' => 'civicrm/admin/filehandler',
+    'permission' => 'administer CiviCRM',
+    'operator' => 'OR',
+    'separator' => 0,
+  ]);
+  _filehandler_civix_navigationMenu($menu);
+}
